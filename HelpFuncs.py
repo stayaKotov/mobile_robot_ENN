@@ -65,11 +65,13 @@ def create_and_do_processes(func, args):
 
 
 # численное решение дифференциальных уравнений на основе улучшенного метода Эйлера
-def ode45(network, system, t, NU, step):
+def ode45(networks, system, t, NU, step):
 
     def u(x):
-        uu, uu1 = network.feed_forward(np.array([[e] for e in x]))
-        return check_u(uu[0]), check_u1(uu1[0])
+        args = np.array([[e] for e in x])
+        uu = float(networks[0].feed_forward(args))
+        uu1 = float(networks[1].feed_forward(args))
+        return check_u(uu), check_u1(uu1)
 
     dim = len(NU)
     time = t[0]+step
@@ -144,19 +146,24 @@ def set_penalty(point):
 
 
 # функция вычисления двух критериев эффективности
-def evaluate(network):
+def evaluate(networks):
     counter = 0
     results = [0, 0]
-    NU = [[-8, -4, 0], [8, -4, 0], [-8, 4, 0], [8, 4, 0]]
+    NU = [
+         [-8, -4, 0], [-10, -4, 0], [-8, -5, 0],
+         [8, -4, 0], [10, -4, 0], [-8, -5, 0],
+         [-8, 4, 0], [-10, 4, 0], [-8, 5, 0],
+         [8, 4, 0], [10, 4, 0], [8, 5, 0],
+    ]
     c = 4
     epsi = 0.08
     for q_q in NU[:]:
         penalty = [0 for _ in range(c)]
         y0 = q_q
 
-        time = 10
+        time = 14
         t = np.arange(0, time, 0.1)
-        res = ode45(network, system, t, y0, 0.1)
+        res = ode45(networks, system, t, y0, 0.1)
         xs = [y0[0]]+res[0]
         ys = [y0[1]]+res[1]
         tetas = [y0[2]]+res[2]
@@ -217,7 +224,7 @@ def evaluate(network):
         s = sum(penalty)
         timetime = t[qwe]
 
-        if tt <= epsi and t[qwe] < 9.9 and s == 0:
+        if tt <= epsi and t[qwe] < time and s == 0:
             # print('xs = {0} and ys = {1} and tetas = {2} and time = {3}'.format(xs[qwe], ys[qwe], tetas[qwe], t[qwe]))
             # print('dist = {0} and penalty = {1}'.format(tt, s))
             counter += 1

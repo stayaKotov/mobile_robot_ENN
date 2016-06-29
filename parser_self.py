@@ -11,17 +11,16 @@ def parse_depth(genotype):
             "<more_expr>",
         ],
         "<more_expr>": [
-            # "self.network.remove_layer(<layer_count>) ",
             "self.network.add_layer(<layer_count>,<bigConst>) ",
             "self.network.add_neurons(<layer_count>,<bigConst>) ",
             "self.network.change_active_func(<layer_count>,<Activation_func_number>) ",
             # "self.network.remove_neurons(<layer_count>,<bigConst>) ",
         ],
         "<layer_count>": [
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'
+            '1', '2', '3', '4', '5',  # '6', '7', '8', '9', '10'
         ],
         '<bigConst>': [
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'
+            '1', '2', '3', '4', '5',  # '6', '7', '8', '9', '10'
         ],
         '<Activation_func_number>': [
             '0', '1', '2', '3', '4', '5'
@@ -40,8 +39,7 @@ def parse_depth(genotype):
         if not elem and j < length:
             break
         el = elem[0]
-        i = int(genotype[j] % len(grammar[el]))
-        new_el = grammar[el][i]
+        new_el = grammar[el][int(genotype[j] % len(grammar[el]))]
         h = h.replace(el, new_el, 1)
         j += 1
 
@@ -55,13 +53,4 @@ def parse_depth(genotype):
         else:
             break
 
-    s = r"\<[bigConst|smallConst|Activation_func_number|layer_number]+\>"
-    pattern = re.compile(s)
-    elems = pattern.findall(h)
-    if elems:
-        for el in elems:
-            string = hf.rand(len(grammar[el]))
-            h = h.replace(el, string, 1)
-
     return h
-

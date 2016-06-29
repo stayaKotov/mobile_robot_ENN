@@ -1,24 +1,25 @@
 # -*- coding: utf-8 -*-
 
 import HelpFuncs as hf
-import math
 import random
 
-bound = 30
-
+bound = 3
 mute = 300
 
-class Individ:
-    network = None
+nets = None
 
-    def __init__(self, pheno):
-        self.phenotype = pheno
+
+class Individ:
+
+    def __init__(self, networks=nets, phenotype_1=[], phenotype_2=[]):
+        self.networks = networks
+        self.phenotypes = [phenotype_1, phenotype_2]
         self.time, self.value = self.get_mistake()
         self.fitness = None
 
     def __str__(self):
-        return "time = {0}\nvalue = {1}\nfitness = {2}\nphenotype = {3}\n".format(
-            self.time, self.value, self.fitness, self.phenotype)
+        return "time = {0}\nvalue = {1}\nfitness = {2}\nphenotype_u1 = {3}\nphenotype_u2 = {4}\n".format(
+            self.time, self.value, self.fitness, self.phenotypes[0], self.phenotypes[1])
 
     def __eq__(self, other):
         return self.fitness == other.fitness
@@ -33,8 +34,9 @@ class Individ:
         return not self.__lt__(other)
 
     def get_mistake(self):
-        self.network.set_weights(self.phenotype)
-        return hf.evaluate(self.network)
+        self.networks[0].set_weights(self.phenotypes[0])
+        self.networks[1].set_weights(self.phenotypes[1])
+        return hf.evaluate(self.networks)
 
 ##############################################################################
 ##############################################################################
@@ -45,9 +47,10 @@ def get_phenotype(count):
     return [hf.fract_rand(bound) for _ in range(count)]
 
 
-def begin_teaching(network, pop_len, cycles):
-    Individ.network = network
-    population = get_population(network, pop_len)
+def begin_teaching(networks, pop_len, cycles):
+    global nets
+    nets = networks[:]
+    population = get_population(networks, pop_len)
     population = hf.set_pareto_functionals([[elem.time, elem.value] for elem in population], population)
     l = len(population)
 
@@ -64,49 +67,61 @@ def begin_teaching(network, pop_len, cycles):
 
 
 # Популяцию получаем случайным генерированием первичных параметров у индивидуума.
-def get_population(network, pop_len):
-    return [Individ(get_phenotype(network.get_params_count())) for _ in range(pop_len)]
+def get_population(networks, pop_len):
+    l_1 = networks[0].get_params_count()
+    l_2 = networks[1].get_params_count()
+    return [Individ(networks, get_phenotype(l_1), get_phenotype(l_2)) for _ in range(pop_len)]
 
 
 def get_children_data(parents):
 
     def tournament():
-        tmp = [min([parents[hf.rand(len(parents)-1)] for _1 in range(7)]) for _2 in range(2)]
-        return tmp
+        ret = []
+        for _1 in range(2):
+            random_parents = []
+            r = [random.randint(1, len(parents) - 1) for _ in range(7)]
+            for j in range(7):
+                random_parents.append(parents[r[j]])
+            sorted(random_parents)
+            ret.append(random_parents[0])
+        return ret
 
-    children_dict_net_and_genotype = []
-    for i in range(int(len(parents)/2)):
-        children_dict_net_and_genotype += crossover(tournament())
-    return children_dict_net_and_genotype
+    l = int(len(parents)/2)
+    children_chromo = [[], []]
+    for i in range(l):
+        pair = tournament()
+        children_chromo[0] += crossover(pair[0].phenotypes[0], pair[1].phenotypes[0])
+        children_chromo[1] += crossover(pair[0].phenotypes[1], pair[1].phenotypes[1])
+    return [[el[0], el[1]] for el in zip(children_chromo[0], children_chromo[1])]
 
 
-def crossover(pair):
-    p1 = pair[0]
-    p2 = pair[1]
-    c = random.randint(1, len(p1.phenotype) - 2)
-    d = random.randint(1, len(p1.phenotype) - 2)
+def crossover(p1, p2):
+    c = random.randint(1, len(p1) - 2)
+    d = random.randint(1, len(p1) - 2)
 
     if c > d:
         c, d = d, c
 
-    return [
-        p1.phenotype[:c]+p2.phenotype[c:d]+p1.phenotype[d:],
-        p2.phenotype[:c]+p1.phenotype[c:d]+p2.phenotype[d:]
-    ]
+    return [p1[:c]+p2[c:d]+p1[d:], p2[:c]+p1[c:d]+p2[d:]]
 
 
 def mutation_and_get_children(population, res, qu):
     qu.get()
     global mute
     if mute > 5:
-        mutations = 0.8
+        p = 0.8
     else:
         print('gg')
-        mutations = 0.2
+        p = 0.2
     children_dict = get_children_data(population)
-    childs_dict = mutation(children_dict, mutations)
+    childs_dict = mutation_wrapper(children_dict, p)
     res.put(get_children(childs_dict))
     qu.task_done()
+
+
+def mutation_wrapper(chromosomes, p):
+    return [[el[0], el[1]] for el in
+            zip(mutation([elem[0] for elem in chromosomes], p), mutation([elem[1] for elem in chromosomes], p))]
 
 
 def mutation(childs_dict, p):
@@ -117,15 +132,15 @@ def mutation(childs_dict, p):
     return childs_dict
 
 
-def get_children(children_dict):
-    return [Individ(elem) for elem in children_dict]
+def get_children(children_chromos):
+    return [Individ(networks=nets, phenotype_1=elem[0], phenotype_2=elem[1]) for elem in children_chromos]
 
 
 def get_new_population(population, children):
     l = len(population)
     buf = population+children
     buf.sort()
-    c = math.trunc(0.2*l)
+    c = int(0.2*l)
     new_population = buf[:c]
     tmp = buf[c:]
     ll = len(tmp)

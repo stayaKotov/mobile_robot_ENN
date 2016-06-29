@@ -34,7 +34,7 @@ def sign(z):
 
 class Network(object):
 
-    poss_active_func = [linear, sigma, tang, log, sin, sign]
+    poss_active_func = [tang, linear, log, sigma, sign, sin]
 
     def check_valid(*args):
         for el in args:
@@ -139,7 +139,12 @@ class Network(object):
     def plot(self):
         time = 10
         t = np.arange(0, time, 0.1)
-        nu = [[-8, -4, 0], [8, -4, 0], [-8, 4, 0], [8, 4, 0]]
+        nu = [
+            [-8, -4, 0], [-10, -4, 0], [-8, -5, 0],
+            [8, -4, 0], [10, -4, 0], [-8, -5, 0],
+            [-8, 4, 0], [-10, 4, 0], [-8, 5, 0],
+            [8, 4, 0], [10, 4, 0], [8, 5, 0],
+        ]
         glob_x = []
         glob_y = []
         glob_tetas = []
