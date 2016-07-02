@@ -11,27 +11,23 @@ import pareto_domination as pareto
 def fract_rand(num):
     return round(2*num*random.random()-num, 7)
 
-
-# функция позволяет получить целое числов от нуля до num
-def rand(num):
-    return math.trunc(random.random()*num)
-
-
-# функция принимает параменты каждого элемента множеста
-# строит пространство на основе критериев
-# устанавливает коэффициент эффективности каждому элементу из переданного множества
-def set_pareto_functionals(elems, population):
-    return set_fitness(elems, population)
+def set_fitness(funcs, pop):
+    pp = pop[:]
+    ranks = pareto.assign_ranks(funcs)
+    fitness = pareto.set_fitness_from_ranks(ranks, len(funcs))
+    for i, elem in enumerate(pp):
+        pp[i].fitness = fitness[i]
+    return pp
 
 
-# функция назначает ранг каждому элементу на основе парето оптимизации
-def set_fitness(functionals, population):
-    pop = population[:]
-    ranks = pareto.assign_ranks(functionals)
-    fitness = pareto.set_fitness_from_ranks(ranks, len(functionals))
-    for i in range(len(population)):
-        pop[i].fitness = fitness[i]
-    return pop
+def create_functionals(population):
+    return [[elem.time, elem.accuracy] for elem in population]
+
+
+def get_population_with_fitness(population):
+    return set_fitness(create_functionals(population), population)
+
+
 
 
 # сливаем данные из нескольких потоков в один список
@@ -65,13 +61,12 @@ def create_and_do_processes(func, args):
 
 
 # численное решение дифференциальных уравнений на основе улучшенного метода Эйлера
-def ode45(networks, system, t, NU, step):
+def ode45(network, system, t, NU, step):
 
     def u(x):
         args = np.array([[e] for e in x])
-        uu = float(networks[0].feed_forward(args))
-        uu1 = float(networks[1].feed_forward(args))
-        return check_u(uu), check_u1(uu1)
+        uu, uu1 = network.feed_forward(args)
+        return check_u(float(uu)), check_u1(float(uu1))
 
     dim = len(NU)
     time = t[0]+step
@@ -101,7 +96,6 @@ def system(u, u1):
         lambda t, x: u * math.sin(x[2]),
         lambda t, x: u/Lb * math.tan(u1)
     ]
-
 
 
 Lb = 2
@@ -146,7 +140,7 @@ def set_penalty(point):
 
 
 # функция вычисления двух критериев эффективности
-def evaluate(networks):
+def evaluate(network):
     counter = 0
     results = [0, 0]
     NU = [
@@ -156,14 +150,14 @@ def evaluate(networks):
          [8, 4, 0], [10, 4, 0], [8, 5, 0],
     ]
     c = 4
-    epsi = 0.08
+    epsi = 0.5
     for q_q in NU[:]:
         penalty = [0 for _ in range(c)]
         y0 = q_q
 
         time = 14
         t = np.arange(0, time, 0.1)
-        res = ode45(networks, system, t, y0, 0.1)
+        res = ode45(network, system, t, y0, 0.1)
         xs = [y0[0]]+res[0]
         ys = [y0[1]]+res[1]
         tetas = [y0[2]]+res[2]
@@ -179,7 +173,7 @@ def evaluate(networks):
         # узнаем максимальный индекс по трем параметрам.
         # индекс будет показывать на время полной остановки робота в точке
         for ii in range(len(xs) - 2, 0, -1):
-            if math.fabs(xs[ii]) < 0.05 and math.fabs(ys[ii]) < 0.05 and math.fabs(tetas[ii]) < 0.05:
+            if math.fabs(xs[ii]) < 0.5 and math.fabs(ys[ii]) < 0.5 and math.fabs(tetas[ii]) < 0.5:
                 qwe = ii
             else:
                 break

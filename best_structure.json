@@ -1,0 +1,13 @@
+{
+    "genotype": "[78, 59, 134, 133.0, 93, 178, 165, 153, 82, 42.0]",
+    "phenotype": [
+        "self.network.change_active_func(4,3)",
+        "self.network.add_neurons(6,4)",
+        "self.network.add_layer(6,8)",
+        "self.network.change_active_func(6,5)",
+        "self.network.prepare_weights()"
+    ],
+    "time": "166.8",
+    "value": "1028.8154714538398",
+    "weights": "(-1.6062946,-5.0900852,-0.9517867,0.7329169)\n(5.0705657,-4.5188009;-5.6571895,-4.9798099)"
+}

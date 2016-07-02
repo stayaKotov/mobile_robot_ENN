@@ -1,15 +1,13 @@
 
 # -*- coding:utf-8 -*-
 
-__author__ = 'anton'
 
 import json
 import Net
-import GAforParams as GA
 
 
 # создать представление структуры сети в json файле
-def newJSON(elem):
+def create_json_from_net(elem):
     w = ''
     for matrix in elem.network.weights:
         w += "("
@@ -25,7 +23,7 @@ def newJSON(elem):
     return json.dumps(
         {
             'time': str(elem.time),
-            'value': str(elem.value),
+            'value': str(elem.accuracy),
             'genotype': str(elem.genotype),
             'phenotype': elem.phenotype,
             'weights': w
@@ -34,16 +32,11 @@ def newJSON(elem):
 
 
 # считать json файл и построить сеть, исходя из данных в файле
-def parseJSON(json_file):
-
+def create_net_from_json(json_file):
     dict_ = json.loads(json_file)
-
     js_w = dict_['weights']
     js_matrixes = js_w.split('\n')
-
-    import main
-    network = Net.Network(main.layers)
-
+    net = Net.Network(layers[:])
     phenotype = dict_['phenotype']
 
     pheno_list = phenotype[:]
@@ -58,17 +51,18 @@ def parseJSON(json_file):
     res = new_list + another_list
 
     for action in res:
-        action = action.replace('self.', '')
+        action = action.replace('self.network', 'net')
         eval("{0}".format(action))
-    network.set_weights_from_file(js_matrixes)
-    return network
+    net.set_weights_from_file(js_matrixes)
+    return net
 
 
 if __name__ == "__main__":
+    from main import layers
+    from ga_weights import begin_teaching
+
     f = open('best_structure.json', 'r')
-    network = parseJSON(f.read())
-    best_params = GA.begin_teaching(network=network,
-                                    pop_len=12000,
-                                    cycles=50)
-    network.set_weights(best_params.phenotype)
+    network = create_net_from_json(f.read())
+    best_params = begin_teaching(network=network, pop_len=10, cycles=2)
+    network.set_weights(best_params.genotype)
     network.plot()

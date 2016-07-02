@@ -137,7 +137,7 @@ class Network(object):
                     self.weights[matrix_i][row_i][col_i] = input_row[col_i]
 
     def plot(self):
-        time = 10
+        time = 20
         t = np.arange(0, time, 0.1)
         nu = [
             [-8, -4, 0], [-10, -4, 0], [-8, -5, 0],
